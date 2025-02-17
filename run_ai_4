@@ -1,0 +1,58 @@
+import cv2
+import mediapipe as mp
+import numpy as np
+import joblib
+
+# ✅ Load the trained AI model
+model = joblib.load("squat_ai_model.pkl")
+
+# ✅ Initialize MediaPipe Pose model
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose()
+mp_drawing = mp.solutions.drawing_utils
+
+# ✅ Open webcam (change index if needed)
+cap = cv2.VideoCapture(0)
+
+print("🚀 AI Squat Form Correction - Press 'q' to exit")
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Convert frame to RGB for MediaPipe
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = pose.process(image)
+
+    # If pose is detected, analyze squat form
+    if results.pose_landmarks:
+        keypoints = []
+
+        # ✅ Extract all 33 pose landmarks (x, y, z) and flatten them
+        for lm in results.pose_landmarks.landmark:
+            keypoints.extend([lm.x, lm.y, lm.z])  # Extract 99 features (33 landmarks * 3)
+
+        # ✅ Convert to NumPy array & reshape for model input
+        keypoints = np.array(keypoints).reshape(1, -1)
+
+        # ✅ Make AI prediction
+        prediction = model.predict(keypoints)[0]
+        feedback = "✅ Good Squat!" if prediction == 1 else "⚠️ Incorrect Form!"
+
+        # ✅ Draw landmarks on the frame
+        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        # ✅ Display AI feedback on screen
+        cv2.putText(frame, feedback, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 255, 0) if prediction == 1 else (0, 0, 255), 2)
+
+    # Show real-time webcam with squat feedback
+    cv2.imshow("AI Squat Correction", frame)
+
+    # Press 'q' to exit
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
