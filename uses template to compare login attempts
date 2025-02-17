@@ -1,0 +1,39 @@
+import cv2
+import face_recognition
+import numpy as np
+import pyautogui
+import time
+import os
+
+# Load the stored face template
+stored_face = np.load("stored_face_data.npy")
+
+# Capture a new face for login
+cap = cv2.VideoCapture(0)
+ret, frame = cap.read()
+cap.release()
+
+# Convert to RGB
+rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+face_locations = face_recognition.face_locations(rgb_frame)
+
+if len(face_locations) == 0:
+    print("❌ No face detected! Try again.")
+    exit()
+
+# Get face encoding
+new_face_encoding = face_recognition.face_encodings(rgb_frame, face_locations)[0]
+
+# Compare new face with stored template
+match = np.linalg.norm(stored_face_data.npy - new_face_encoding) < 0.6
+
+if match:
+    print("✅ Face Matched! Logging in...")
+
+    # Simulate password entry
+    time.sleep(1)  # Wait for the login screen
+    pyautogui.write("mig2930004")  # Replace with your real macOS password
+    pyautogui.press("return")
+
+else:
+    print("❌ Face Mismatch! Access Denied.")
