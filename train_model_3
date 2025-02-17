@@ -1,0 +1,36 @@
+#train_model.py
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import joblib
+
+# ✅ Step 1: Load Pose Data from CSV
+csv_path = "/Users/axel/Downloads/pose_data.csv"  # Adjust if needed
+df = pd.read_csv(csv_path)
+
+# ✅ Step 2: Prepare Features (X) and Labels (y)
+# Extract all 33 pose landmarks (99 features)
+X = df.pivot(index=['video', 'frame'], columns='landmark', values=['x', 'y', 'z']).fillna(0)
+X.columns = [f"{col[0]}_{col[1]}" for col in X.columns]  # Flatten multi-index columns
+X = X.reset_index(drop=True)  # Remove video & frame index
+
+# Convert labels to 1 (correct) & 0 (incorrect)
+y = df.groupby(['video', 'frame'])['label'].first().map({'correct': 1, 'incorrect': 0}).reset_index(drop=True)
+
+# ✅ Step 3: Split into Training & Test Data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# ✅ Step 4: Train a Machine Learning Model (Random Forest)
+model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+model.fit(X_train, y_train)
+
+# ✅ Step 5: Evaluate Model Performance
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"✅ Model Accuracy: {accuracy * 100:.2f}%")
+
+# ✅ Step 6: Save Model for Future Use
+joblib.dump(model, "squat_ai_model.pkl")
+print("✅ Model saved as 'squat_ai_model.pkl'")
