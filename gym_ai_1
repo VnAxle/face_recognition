@@ -1,0 +1,49 @@
+import cv2
+import mediapipe as mp
+import os
+import csv
+
+# Initialize MediaPipe Pose model
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose()
+
+# Define input and output
+video_folder = "/Users/axel/Downloads/exercise_videos"
+output_csv = "/Users/axel/Downloads/pose_data.csv"
+
+# Open CSV file to store pose data
+with open(output_csv, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["video", "frame", "landmark", "x", "y", "z", "label"])  # CSV headers
+
+    # Loop through all videos
+    for video_file in os.listdir(video_folder):
+        if video_file.endswith(".mp4"):  # Only process MP4 files
+            video_path = os.path.join(video_folder, video_file)
+            cap = cv2.VideoCapture(video_path)
+            frame_num = 0
+
+            # Label the data (assumes filenames indicate correctness)
+            label = "correct" if "correct" in video_file else "incorrect"
+
+            print(f"Processing {video_file}...")
+
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break  # Stop when video ends
+
+                # Convert frame to RGB for MediaPipe
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = pose.process(image)
+
+                # Save keypoints to CSV
+                if results.pose_landmarks:
+                    for i, lm in enumerate(results.pose_landmarks.landmark):
+                        writer.writerow([video_file, frame_num, i, lm.x, lm.y, lm.z, label])
+
+                frame_num += 1
+
+            cap.release()
+
+print("✅ All videos processed! Pose data saved in pose_data.csv")
