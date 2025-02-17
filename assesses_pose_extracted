@@ -1,0 +1,45 @@
+#visualize_pose.py
+import cv2
+import mediapipe as mp
+import os
+
+# Initialize MediaPipe Pose model
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose()
+mp_drawing = mp.solutions.drawing_utils
+
+# Define video folder
+video_folder = "/Users/axel/Downloads/exercise_videos"
+
+# Loop through all videos
+for video_file in os.listdir(video_folder):
+    if video_file.endswith(".mp4"):  # Only process MP4 files
+        video_path = os.path.join(video_folder, video_file)
+        cap = cv2.VideoCapture(video_path)
+
+        print(f"Displaying {video_file}... Press 'q' to exit.")
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break  # Stop when video ends
+
+            # Convert frame to RGB for MediaPipe
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(image)
+
+            # Draw keypoints if detected
+            if results.pose_landmarks:
+                mp_drawing.draw_landmarks(
+                    frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS
+                )
+
+            # Show video with keypoints
+            cv2.imshow("Pose Visualization", frame)
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break  # Press 'q' to exit
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+print("✅ Pose visualization complete!")
